@@ -1,0 +1,183 @@
+.dashboard {
+  padding: var(--rds-spacing-9) var(--rds-spacing-8);
+  max-width: var(--rds-container-x-large);
+  margin: 0 auto;
+}
+
+.dashboard__header {
+  margin-bottom: var(--rds-spacing-9);
+}
+
+.dashboard__title {
+  display: flex;
+  align-items: center;
+  gap: var(--rds-spacing-4);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--rds-color-text-default);
+  margin: 0 0 var(--rds-spacing-3);
+}
+
+.dashboard__subtitle {
+  margin: 0;
+  color: var(--rds-color-text-medium-emphasis);
+}
+
+/* Loading */
+.dashboard__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--rds-spacing-6);
+  padding: var(--rds-spacing-14);
+  color: var(--rds-color-text-medium-emphasis);
+}
+
+/* Error */
+.dashboard__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--rds-spacing-5);
+  padding: var(--rds-spacing-11);
+  background-color: var(--rds-color-background-accent-danger);
+  border-radius: var(--rds-border-radius-large);
+  color: var(--rds-color-text-danger);
+  text-align: center;
+}
+
+.retry-hint {
+  color: var(--rds-color-text-primary);
+}
+
+/* KPI Grid */
+.dashboard__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--rds-spacing-6);
+  margin-bottom: var(--rds-spacing-9);
+}
+
+/* Navigation Cards */
+.dashboard__nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--rds-spacing-6);
+  margin-bottom: var(--rds-spacing-9);
+}
+
+.nav-card {
+  display: flex;
+  gap: var(--rds-spacing-6);
+  padding: var(--rds-spacing-8);
+  background-color: var(--rds-color-background-surface-default);
+  border: var(--rds-border-width-default) solid var(--rds-color-border-default);
+  border-radius: var(--rds-border-radius-large);
+  box-shadow: var(--rds-drop-shadow-accent);
+  transition: box-shadow 0.15s ease;
+}
+
+.nav-card:hover {
+  box-shadow: var(--rds-drop-shadow-raised);
+}
+
+.nav-card__icon {
+  display: flex;
+  align-items: flex-start;
+  padding-top: var(--rds-spacing-2);
+  color: var(--rds-color-icon-primary);
+  font-size: 2rem;
+}
+
+.nav-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rds-spacing-4);
+}
+
+.nav-card__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--rds-color-text-default);
+}
+
+.nav-card__desc {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--rds-color-text-medium-emphasis);
+}
+
+/* Category Distribution */
+.dashboard__section-title {
+  margin: 0 0 var(--rds-spacing-6);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--rds-color-text-default);
+}
+
+.dashboard__categories {
+  background-color: var(--rds-color-background-surface-default);
+  border: var(--rds-border-width-default) solid var(--rds-color-border-default);
+  border-radius: var(--rds-border-radius-large);
+  padding: var(--rds-spacing-8);
+  margin-bottom: var(--rds-spacing-9);
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rds-spacing-4);
+}
+
+.category-item {
+  display: grid;
+  grid-template-columns: 10rem 1fr 3rem;
+  align-items: center;
+  gap: var(--rds-spacing-4);
+}
+
+.category-item__name {
+  font-size: 0.875rem;
+  color: var(--rds-color-text-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-item__bar-wrap {
+  height: var(--rds-sizing-3);
+  background-color: var(--rds-color-background-accent-neutral);
+  border-radius: var(--rds-border-radius-full);
+  overflow: hidden;
+}
+
+.category-item__bar {
+  height: 100%;
+  background-color: var(--rds-color-background-solid-primary);
+  border-radius: var(--rds-border-radius-full);
+  transition: width 0.3s ease;
+  min-width: var(--rds-sizing-3);
+}
+
+.category-item__count {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--rds-color-text-medium-emphasis);
+  text-align: right;
+}
+
+/* Empty State */
+.dashboard__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--rds-spacing-6);
+  padding: var(--rds-spacing-14);
+  background-color: var(--rds-color-background-accent-neutral);
+  border-radius: var(--rds-border-radius-large);
+  color: var(--rds-color-text-medium-emphasis);
+  text-align: center;
+  font-size: 1rem;
+}
+

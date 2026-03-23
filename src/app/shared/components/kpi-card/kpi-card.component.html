@@ -1,0 +1,10 @@
+<div class="kpi-card" [attr.data-intent]="intent()">
+  <div class="kpi-card__icon">
+    <dsa-icon [iconName]="icon()" [fill]="true" />
+  </div>
+  <div class="kpi-card__body">
+    <span class="kpi-card__value">{{ value() }}</span>
+    <span class="kpi-card__title">{{ title() }}</span>
+  </div>
+</div>
+

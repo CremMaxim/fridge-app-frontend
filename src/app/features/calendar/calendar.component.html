@@ -1,0 +1,205 @@
+<div class="calendar-page">
+  <!-- Page Header -->
+  <div class="calendar-page__header">
+    <div>
+      <h1 class="calendar-page__title">
+        <dsa-icon iconName="calendar_month" [fill]="true" />
+        Expiry Calendar
+      </h1>
+      <p class="calendar-page__subtitle">Browse item expiries by month.</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="calendar-page__loading">
+      <dsa-spinner [size]="48" />
+      <p>Loading items…</p>
+    </div>
+  } @else if (errorMsg()) {
+    <div class="calendar-page__error">
+      <dsa-icon iconName="error" [fill]="true" />
+      <p>{{ errorMsg() }}</p>
+    </div>
+  } @else {
+    <!-- ─── Filter / Sort Bar ─── -->
+    <div class="calendar-page__controls">
+      <!-- Quick filter -->
+      <div class="filter-group">
+        <span class="filter-label">Show:</span>
+        <div class="filter-buttons" role="group" aria-label="Quick filter">
+          <button
+            type="button"
+            dsa-button
+            [class]="quickFilter() === 'all' ? 'primary small' : 'tertiary small'"
+            (click)="setQuickFilter('all')"
+          >All</button>
+          <button
+            type="button"
+            dsa-button
+            [class]="quickFilter() === 'expired' ? 'danger small' : 'tertiary small'"
+            (click)="setQuickFilter('expired')"
+          >
+            <dsa-icon iconName="warning" />
+            Expired
+          </button>
+          <button
+            type="button"
+            dsa-button
+            [class]="quickFilter() === 'soon' ? 'primary small' : 'tertiary small'"
+            (click)="setQuickFilter('soon')"
+          >
+            <dsa-icon iconName="schedule" />
+            Expiring in 7 days
+          </button>
+        </div>
+      </div>
+
+      <!-- Sort -->
+      <div class="filter-group">
+        <span class="filter-label">Sort:</span>
+        <div class="filter-buttons" role="group" aria-label="Sort order">
+          <button
+            type="button"
+            dsa-button
+            [class]="sortOrder() === 'asc' ? 'primary small' : 'tertiary small'"
+            (click)="setSortOrder('asc')"
+          >
+            <dsa-icon iconName="arrow_upward" />
+            Earliest first
+          </button>
+          <button
+            type="button"
+            dsa-button
+            [class]="sortOrder() === 'desc' ? 'primary small' : 'tertiary small'"
+            (click)="setSortOrder('desc')"
+          >
+            <dsa-icon iconName="arrow_downward" />
+            Latest first
+          </button>
+        </div>
+      </div>
+
+      <!-- Category filter -->
+      @if (availableCategories().length > 0) {
+        <div class="filter-group filter-group--category">
+          <dsa-form-field label="Filter by category">
+            <dsa-select
+              [dataSource]="availableCategories()"
+              [multiSelect]="true"
+              [deletable]="true"
+              placeholder="All categories"
+              noSearchResultsMsg="No categories found"
+              (selectionAdded)="onCategoryAdded($event)"
+              (selectionRemoved)="onCategoryRemoved($event)"
+              (allSelectionsRemoved)="onAllCategoriesRemoved()"
+            ></dsa-select>
+          </dsa-form-field>
+        </div>
+      }
+    </div>
+
+    <!-- ─── Month Navigation ─── -->
+    <div class="calendar-nav">
+      <dsa-icon-button
+        iconName="chevron_left"
+        buttonText="Previous month"
+        mode="secondary"
+        (click)="prevMonth()"
+      />
+      <h2 class="calendar-nav__month">{{ currentMonthLabel() }}</h2>
+      <dsa-icon-button
+        iconName="chevron_right"
+        buttonText="Next month"
+        mode="secondary"
+        (click)="nextMonth()"
+      />
+      <button
+        type="button"
+        dsa-button
+        class="tertiary small"
+        (click)="goToToday()"
+      >Today</button>
+    </div>
+
+    <!-- ─── Legend ─── -->
+    <div class="calendar-legend">
+      <span class="legend-item"><span class="legend-dot legend-dot--expired"></span> Expired</span>
+      <span class="legend-item"><span class="legend-dot legend-dot--soon"></span> Expiring Soon</span>
+      <span class="legend-item"><span class="legend-dot legend-dot--normal"></span> Fresh</span>
+    </div>
+
+    <!-- ─── Calendar Grid ─── -->
+    <div class="calendar-grid-wrap">
+      <div class="calendar-grid">
+        <!-- Day-of-week headers -->
+        @for (day of WEEK_DAYS; track day) {
+          <div class="calendar-grid__day-header">{{ day }}</div>
+        }
+
+        <!-- Calendar cells -->
+        @for (week of calendarWeeks(); track $index) {
+          @for (day of week; track day.dateStr) {
+            <button
+              type="button"
+              class="calendar-cell"
+              [class.calendar-cell--other-month]="!day.isCurrentMonth"
+              [class.calendar-cell--today]="day.isToday"
+              [class.calendar-cell--has-items]="day.items.length > 0"
+              [class.calendar-cell--selected]="selectedDay()?.dateStr === day.dateStr"
+              [attr.aria-label]="day.date.toLocaleDateString('en-GB', {weekday:'long',day:'numeric',month:'long'}) + (day.items.length > 0 ? ', ' + day.items.length + ' items' : '')"
+              (click)="selectDay(day)"
+            >
+              <span class="calendar-cell__number">{{ day.dayNumber }}</span>
+              @if (day.items.length > 0) {
+                <div class="calendar-cell__dots">
+                  @if (day.hasExpired) {
+                    <span class="dot dot--expired" title="Expired items"></span>
+                  }
+                  @if (day.hasExpiringSoon) {
+                    <span class="dot dot--soon" title="Expiring soon"></span>
+                  }
+                  @if (!day.hasExpired && !day.hasExpiringSoon) {
+                    <span class="dot dot--normal" title="Fresh items"></span>
+                  }
+                </div>
+                <span class="calendar-cell__count">{{ day.items.length }}</span>
+              }
+            </button>
+          }
+        }
+      </div>
+
+      <!-- ─── Day Detail Panel ─── -->
+      @if (selectedDay()) {
+        <div class="day-detail">
+          <div class="day-detail__header">
+            <h3 class="day-detail__date">
+              {{ selectedDay()!.date.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) }}
+            </h3>
+            <dsa-icon-button
+              iconName="close"
+              buttonText="Close"
+              mode="tertiary"
+              size="small"
+              (click)="clearDaySelection()"
+            />
+          </div>
+          <div class="day-detail__items">
+            @for (item of selectedDay()!.items; track item.id) {
+              <div class="day-detail__item">
+                <div class="day-detail__item-info">
+                  <span class="day-detail__item-name">{{ item.name }}</span>
+                  @if (item.category) {
+                    <span class="day-detail__item-category">{{ item.category }}</span>
+                  }
+                </div>
+                <app-status-badge [status]="getExpiryStatus(item.expiryDate)" />
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
