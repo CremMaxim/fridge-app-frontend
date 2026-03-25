@@ -32,6 +32,13 @@ interface CategoryStat {
 export class DashboardComponent implements OnInit {
   private readonly inventoryService = inject(InventoryService);
 
+  readonly dateLabel = new Date().toLocaleDateString('de-DE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
   readonly items = signal<InventoryItem[]>([]);
   readonly loading = signal(true);
   readonly errorMsg = signal<string | null>(null);
@@ -53,7 +60,7 @@ export class DashboardComponent implements OnInit {
   readonly categoryStats = computed((): CategoryStat[] => {
     const map = new Map<string, number>();
     this.items().forEach(item => {
-      const cat = item.category ?? 'Uncategorized';
+      const cat = item.category ?? 'Ohne Kategorie';
       map.set(cat, (map.get(cat) ?? 0) + 1);
     });
     return Array.from(map.entries())
@@ -68,7 +75,9 @@ export class DashboardComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.errorMsg.set('Could not load inventory. Make sure the backend is running on localhost:8080.');
+        this.errorMsg.set(
+          'Das Inventar konnte nicht geladen werden. Stelle sicher, dass das Backend auf localhost:8080 läuft.',
+        );
         this.loading.set(false);
       },
     });

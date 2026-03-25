@@ -2,139 +2,203 @@
   <!-- Page Header -->
   <div class="items-page__header">
     <div>
-      <h1 class="items-page__title">
-        <dsa-icon iconName="inventory_2" [fill]="true" />
-        Manage Items
-      </h1>
-      <p class="items-page__subtitle">Create, view and remove fridge items.</p>
+      <h1 class="page-header__title">Artikel verwalten</h1>
+      <p class="page-header__subtitle">Artikel hinzufügen, ansehen und aus dem Kühlschrank entfernen.</p>
     </div>
-    <button
-      type="button"
-      dsa-button
-      class="primary"
-      [disabled]="loading()"
-      (click)="openCreateDialog()"
-    >
-      <dsa-icon iconName="add" />
-      Add Item
-    </button>
+    <div class="items-page__header-actions">
+      <button
+        type="button"
+        dsa-button
+        [class]="isMockDataActive() ? 'danger' : ''"
+        [disabled]="mockDataLoading()"
+        (click)="toggleMockData()"
+      >
+        @if (mockDataLoading()) {
+          <dsa-spinner [size]="16" />
+        } @else {
+          <dsa-icon [iconName]="isMockDataActive() ? 'delete_sweep' : 'science'" />
+        }
+        {{ isMockDataActive() ? 'Testdaten entfernen' : 'Testdaten laden' }}
+      </button>
+      <button
+        type="button"
+        dsa-button
+        class="primary"
+        [disabled]="loading()"
+        (click)="openCreateDialog()"
+      >
+        <dsa-icon iconName="add" />
+        Artikel hinzufügen
+      </button>
+    </div>
   </div>
+
+  <!-- Mock-data banner -->
+  @if (isMockDataActive()) {
+    <div class="mock-data-banner" role="status">
+      <dsa-icon iconName="science" />
+      <span>Testmodus aktiv – Testdaten sind im Backend gespeichert und werden mit „Testdaten entfernen" wieder gelöscht.</span>
+    </div>
+  }
 
   <!-- Loading -->
   @if (loading()) {
-    <div class="items-page__loading">
+    <div class="state-center">
       <dsa-spinner [size]="48" />
-      <p>Loading items…</p>
+      <p>Artikel werden geladen…</p>
     </div>
   }
 
   <!-- Error -->
   @if (!loading() && errorMsg()) {
-    <div class="items-page__error">
+    <div class="state-error">
       <dsa-icon iconName="error" [fill]="true" />
       <p>{{ errorMsg() }}</p>
     </div>
   }
 
-  <!-- Empty State -->
-  @if (!loading() && !errorMsg() && sortedItems().length === 0) {
-    <div class="items-page__empty">
-      <dsa-icon iconName="kitchen" [fill]="true" />
-      <p>No items in your fridge yet. Add your first item!</p>
-      <button type="button" dsa-button class="primary" (click)="openCreateDialog()">
-        <dsa-icon iconName="add" />
-        Add Item
-      </button>
+  @if (!loading() && !errorMsg()) {
+    <!-- Search + Info Bar -->
+    <div class="items-page__toolbar">
+      <div class="items-page__search">
+        <dsa-icon iconName="search" class="search-icon" />
+        <input
+          class="search-input"
+          type="search"
+          [value]="searchQuery()"
+          (input)="searchQuery.set($any($event.target).value)"
+          placeholder="Nach Name oder Kategorie suchen…"
+          aria-label="Artikel suchen"
+        />
+      </div>
+      <span class="items-page__count">
+        @if (searchQuery()) {
+          {{ visibleItems().length }} von {{ items().length }} Artikeln
+        } @else {
+          {{ visibleItems().length }} von {{ items().length }} Artikeln sichtbar
+        }
+      </span>
     </div>
-  }
 
-  <!-- Items Table -->
-  @if (!loading() && !errorMsg() && sortedItems().length > 0) {
-    <div class="items-page__table">
-      <dsa-table [value]="sortedItems()" [columns]="columns" [rowHover]="true">
-        <ng-template dsaTemplate="colgroup" let-columns>
-          <colgroup>
-            @for (col of columns; track col.field) {
-              <col [style.width]="col.width" />
-            }
-          </colgroup>
-        </ng-template>
+    <!-- Empty State (no items at all) -->
+    @if (items().length === 0) {
+      <div class="state-empty">
+        <div class="state-empty__icon">
+          <dsa-icon iconName="kitchen" [fill]="true" />
+        </div>
+        <h2 class="state-empty__title">Noch keine Artikel</h2>
+        <p class="state-empty__desc">Dein Kühlschrank ist leer. Füge deinen ersten Artikel hinzu!</p>
+        <button type="button" dsa-button class="primary" (click)="openCreateDialog()">
+          <dsa-icon iconName="add" />
+          Ersten Artikel hinzufügen
+        </button>
+      </div>
+    }
 
-        <ng-template dsaTemplate="header" let-columns>
-          <tr>
-            @for (col of columns; track col.field) {
-              <th>{{ col.header }}</th>
-            }
-          </tr>
-        </ng-template>
+    <!-- No search results -->
+    @if (items().length > 0 && searchQuery().trim() && visibleItems().length === 0) {
+      <div class="state-no-results">
+        <dsa-icon iconName="search_off" [fill]="true" />
+        <p>Keine Artikel für „{{ searchQuery() }}" gefunden.</p>
+      </div>
+    }
 
-        <ng-template dsaTemplate="body" let-item let-columns="columns">
-          <tr [attr.data-status]="getExpiryStatus(item.expiryDate)">
-            <td class="item-name">{{ item.name }}</td>
-            <td class="item-category">
-              @if (item.category) {
-                <span class="category-tag">{{ item.category }}</span>
-              } @else {
-                <span class="no-category">—</span>
+    @if (items().length > 0 && !searchQuery().trim() && visibleItems().length === 0) {
+      <div class="state-no-results">
+        <dsa-icon iconName="check_circle" [fill]="true" />
+        <p>Alle Artikel sind als gegessen markiert. Nutze die Suche, um sie wieder anzuzeigen.</p>
+      </div>
+    }
+
+    <!-- Items Table -->
+    @if (visibleItems().length > 0) {
+      <div class="items-page__table">
+        <dsa-table [value]="visibleItems()" [columns]="columns" [rowHover]="true">
+          <ng-template dsaTemplate="colgroup" let-columns>
+            <colgroup>
+              @for (col of columns; track col.field) {
+                <col [style.width]="col.width" />
               }
-            </td>
-            <td class="item-expiry">
-              {{ formatDisplayDate(item.expiryDate) }}
-            </td>
-            <td class="item-status">
-              <app-status-badge [status]="getExpiryStatus(item.expiryDate)" />
-            </td>
-            <td class="item-actions">
-              <dsa-icon-button
-                iconName="delete"
-                mode="danger"
-                size="small"
-                buttonText="Delete item"
-                (click)="confirmDelete(item)"
-              />
-            </td>
-          </tr>
-        </ng-template>
+            </colgroup>
+          </ng-template>
 
-        <ng-template dsaTemplate="emptymessage">
-          <tr>
-            <td [attr.colspan]="columns.length" class="empty-row">
-              No items match your criteria.
-            </td>
-          </tr>
-        </ng-template>
-      </dsa-table>
-    </div>
+          <ng-template dsaTemplate="header" let-columns>
+            <tr>
+              @for (col of columns; track col.field) {
+                <th>{{ col.header }}</th>
+              }
+            </tr>
+          </ng-template>
+
+          <ng-template dsaTemplate="body" let-item let-columns="columns">
+            <tr [attr.data-status]="getExpiryStatus(item.expiryDate)">
+              <td class="item-name">{{ item.name }}</td>
+              <td class="item-category">
+                @if (item.category) {
+                  <dsa-badge [text]="item.category" intention="neutral" />
+                } @else {
+                  <span class="no-category">–</span>
+                }
+              </td>
+              <td class="item-expiry">
+                {{ formatDisplayDate(item.expiryDate) }}
+              </td>
+              <td class="item-status">
+                @if (isEaten(item)) {
+                  <dsa-badge text="Gegessen" intention="info" />
+                } @else {
+                  <app-status-badge [status]="getExpiryStatus(item.expiryDate)" />
+                }
+              </td>
+              <td class="item-actions">
+                @if (!isEaten(item)) {
+                  <button type="button" dsa-button class="tertiary small" (click)="markAsEaten(item)">
+                    Gegessen
+                  </button>
+                }
+                <dsa-icon-button
+                  iconName="delete"
+                  mode="danger"
+                  size="small"
+                  buttonText="Artikel löschen"
+                  (click)="confirmDelete(item)"
+                />
+              </td>
+            </tr>
+          </ng-template>
+        </dsa-table>
+      </div>
+    }
   }
 </div>
 
 <!-- ─────────────── Create Item Dialog ─────────────── -->
 <dsa-dialog
   [visible]="showCreateDialog()"
-  header="Add New Item"
+  header="Neuen Artikel hinzufügen"
   [closable]="true"
   maxWidth="480px"
   (visibleChange)="showCreateDialog.set($event)"
 >
   <form [formGroup]="createForm" (ngSubmit)="submitCreate()" class="create-form">
     <dsa-form-field
-      label="Name"
+      label="Name *"
       [dsaError]="createForm.controls['name'].invalid && createForm.controls['name'].touched"
-      errorMsg="Name is required (max 100 characters)"
+      errorMsg="Name ist erforderlich (max. 100 Zeichen)"
     >
       <input
         dsa-input
         type="text"
         formControlName="name"
-        placeholder="e.g. Milk"
+        placeholder="z. B. Milch"
         [required]="true"
       />
     </dsa-form-field>
 
     <dsa-form-field
-      label="Expiry Date"
+      label="Ablaufdatum *"
       [dsaError]="createForm.controls['expiryDate'].invalid && createForm.controls['expiryDate'].touched"
-      errorMsg="Expiry date is required"
+      errorMsg="Ablaufdatum ist erforderlich"
     >
       <input
         dsa-input
@@ -144,24 +208,18 @@
       />
     </dsa-form-field>
 
-    <dsa-form-field label="Category" supportingText="Optional — e.g. Dairy, Meat, Vegetables">
+    <dsa-form-field label="Kategorie" supportingText="Optional — z. B. Milchprodukte, Fleisch, Gemüse">
       <input
         dsa-input
         type="text"
         formControlName="category"
-        placeholder="e.g. Dairy"
+        placeholder="z. B. Milchprodukte"
       />
     </dsa-form-field>
   </form>
 
   <dsa-dialog-footer>
-    <button
-      type="button"
-      dsa-button
-      (click)="closeCreateDialog()"
-    >
-      Cancel
-    </button>
+    <button type="button" dsa-button (click)="closeCreateDialog()">Abbrechen</button>
     <button
       type="button"
       dsa-button
@@ -172,7 +230,7 @@
       @if (submitting()) {
         <dsa-spinner [size]="16" />
       }
-      Add Item
+      Hinzufügen
     </button>
   </dsa-dialog-footer>
 </dsa-dialog>
@@ -180,7 +238,7 @@
 <!-- ─────────────── Delete Confirmation Dialog ─────────────── -->
 <dsa-dialog
   [visible]="itemToDelete() !== null"
-  header="Confirm Deletion"
+  header="Artikel löschen?"
   [closable]="true"
   maxWidth="420px"
   (visibleChange)="!$event && cancelDelete()"
@@ -188,28 +246,16 @@
   <div class="delete-confirm">
     <dsa-icon iconName="warning" [fill]="true" class="delete-confirm__icon" />
     <p>
-      Are you sure you want to remove
-      <strong>{{ itemToDelete()?.name }}</strong>
-      from your fridge? This action cannot be undone.
+      Möchtest du <strong>{{ itemToDelete()?.name }}</strong> wirklich löschen?
+      Diese Aktion kann nicht rückgängig gemacht werden.
     </p>
   </div>
 
   <dsa-dialog-footer>
-    <button
-      type="button"
-      dsa-button
-      (click)="cancelDelete()"
-    >
-      Cancel
-    </button>
-    <button
-      type="button"
-      dsa-button
-      class="danger"
-      (click)="submitDelete()"
-    >
+    <button type="button" dsa-button (click)="cancelDelete()">Abbrechen</button>
+    <button type="button" dsa-button class="danger" (click)="submitDelete()">
       <dsa-icon iconName="delete" />
-      Delete
+      Löschen
     </button>
   </dsa-dialog-footer>
 </dsa-dialog>

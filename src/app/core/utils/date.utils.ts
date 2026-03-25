@@ -39,9 +39,9 @@ export function isExpiringSoon(expiryDate: string): boolean {
   return getExpiryStatus(expiryDate) === ExpiryStatus.ExpiringSoon;
 }
 
-/** Format yyyy-MM-dd to a human-readable string, e.g. "23 Mar 2026". */
+/** Format yyyy-MM-dd to a human-readable string, e.g. "23. März 2026". */
 export function formatDisplayDate(dateStr: string): string {
-  return parseLocalDate(dateStr).toLocaleDateString('en-GB', {
+  return parseLocalDate(dateStr).toLocaleDateString('de-DE', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

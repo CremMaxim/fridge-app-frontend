@@ -11,9 +11,7 @@ import { DsaButtonComponent } from '@dsa/design-system-angular/button';
 import { DsaIconButtonComponent } from '@dsa/design-system-angular/icon-button';
 import { DsaIconComponent } from '@dsa/design-system-angular/icon';
 import { DsaSpinnerComponent } from '@dsa/design-system-angular/spinner';
-import { DsaFormFieldComponent } from '@dsa/design-system-angular/form-field';
-import { DsaSelectComponent, DsaSelectItem } from '@dsa/design-system-angular/select';
-import { FormsModule } from '@angular/forms';
+import { DsaChipComponent } from '@dsa/design-system-angular/chip';
 
 import { InventoryItem, ExpiryStatus } from '../../core/models/inventory-item.model';
 import { InventoryService } from '../../core/services/inventory.service';
@@ -24,8 +22,6 @@ import {
 } from '../../core/utils/date.utils';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 
-export type QuickFilter = 'all' | 'expired' | 'soon';
-export type SortOrder = 'asc' | 'desc';
 
 export interface CalendarDay {
   date: Date;
@@ -38,18 +34,16 @@ export interface CalendarDay {
   hasExpiringSoon: boolean;
 }
 
-const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEK_DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 @Component({
   selector: 'app-calendar',
   imports: [
-    FormsModule,
     DsaButtonComponent,
     DsaIconButtonComponent,
     DsaIconComponent,
     DsaSpinnerComponent,
-    DsaFormFieldComponent,
-    DsaSelectComponent,
+    DsaChipComponent,
     StatusBadgeComponent,
   ],
   templateUrl: './calendar.component.html',
@@ -71,45 +65,31 @@ export class CalendarComponent implements OnInit {
   readonly currentMonth = signal(this.today.getMonth()); // 0-based
 
   // Filters
-  readonly quickFilter = signal<QuickFilter>('all');
-  readonly sortOrder = signal<SortOrder>('asc');
   readonly selectedCategories = signal<string[]>([]);
 
   // Selected day detail
   readonly selectedDay = signal<CalendarDay | null>(null);
 
   readonly currentMonthLabel = computed(() => {
-    return new Date(this.currentYear(), this.currentMonth(), 1).toLocaleDateString('en-GB', {
+    return new Date(this.currentYear(), this.currentMonth(), 1).toLocaleDateString('de-DE', {
       month: 'long',
       year: 'numeric',
     });
   });
 
-  readonly availableCategories = computed((): DsaSelectItem[] => {
+  readonly availableCategories = computed((): string[] => {
     const cats = new Set<string>();
-    this.items().forEach(i => cats.add(i.category ?? 'Uncategorized'));
-    return Array.from(cats)
-      .sort()
-      .map(c => ({ label: c }));
+    this.items().forEach(i => cats.add(i.category ?? 'Ohne Kategorie'));
+    return Array.from(cats).sort();
   });
 
   readonly filteredSortedItems = computed((): InventoryItem[] => {
     let result = this.items();
-    const qf = this.quickFilter();
-    if (qf === 'expired') {
-      result = result.filter(i => getExpiryStatus(i.expiryDate) === ExpiryStatus.Expired);
-    } else if (qf === 'soon') {
-      result = result.filter(i => getExpiryStatus(i.expiryDate) === ExpiryStatus.ExpiringSoon);
-    }
     const cats = this.selectedCategories();
     if (cats.length > 0) {
-      result = result.filter(i => cats.includes(i.category ?? 'Uncategorized'));
+      result = result.filter(i => cats.includes(i.category ?? 'Ohne Kategorie'));
     }
-    const ord = this.sortOrder();
-    return [...result].sort((a, b) => {
-      const cmp = a.expiryDate.localeCompare(b.expiryDate);
-      return ord === 'asc' ? cmp : -cmp;
-    });
+    return [...result].sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
   });
 
   readonly calendarWeeks = computed((): CalendarDay[][] => {
@@ -165,7 +145,9 @@ export class CalendarComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.errorMsg.set('Could not load items. Make sure the backend is running on localhost:8080.');
+        this.errorMsg.set(
+          'Die Artikel konnten nicht geladen werden. Stelle sicher, dass das Backend auf localhost:8080 läuft.',
+        );
         this.loading.set(false);
       },
     });
@@ -199,26 +181,16 @@ export class CalendarComponent implements OnInit {
     this.selectedDay.set(null);
   }
 
-  setQuickFilter(filter: QuickFilter): void {
-    this.quickFilter.set(filter);
+
+  onChipToggle(category: string, selected: unknown): void {
+    if (selected) {
+      this.selectedCategories.update(cats => [...cats, category]);
+    } else {
+      this.selectedCategories.update(cats => cats.filter(c => c !== category));
+    }
     this.selectedDay.set(null);
   }
 
-  setSortOrder(order: SortOrder): void {
-    this.sortOrder.set(order);
-  }
-
-  onCategoryAdded(item: DsaSelectItem): void {
-    this.selectedCategories.update(cats => [...cats, item.label]);
-  }
-
-  onCategoryRemoved(item: DsaSelectItem): void {
-    this.selectedCategories.update(cats => cats.filter(c => c !== item.label));
-  }
-
-  onAllCategoriesRemoved(): void {
-    this.selectedCategories.set([]);
-  }
 
   selectDay(day: CalendarDay): void {
     if (day.items.length === 0) {

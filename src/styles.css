@@ -13,7 +13,19 @@ body {
   height: 100%;
 }
 
-h1, h2, h3, h4, h5, h6 {
+/* Smooth scrolling — respects prefers-reduced-motion */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: inherit;
 }
 
@@ -21,3 +33,13 @@ p {
   margin: 0;
 }
 
+/* Prevent text overflow in all containers by default */
+img,
+video {
+  max-width: 100%;
+}
+
+/* RouterLink / anchor resets — DSA nav-card links inherit text colour */
+a {
+  color: inherit;
+}

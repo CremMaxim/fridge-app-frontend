@@ -1,87 +1,83 @@
 <div class="dashboard">
-  <div class="dashboard__header">
-    <h1 class="dashboard__title">
-      <dsa-icon iconName="kitchen" [fill]="true" />
-      Fridge Dashboard
-    </h1>
-    <p class="dashboard__subtitle">Overview of your fridge inventory</p>
-  </div>
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="page-header__text">
+      <h1 class="page-header__title">Kühlschrankübersicht</h1>
+      <p class="page-header__subtitle">{{ dateLabel }}</p>
+    </div>
+  </header>
 
   @if (loading()) {
-    <div class="dashboard__loading">
+    <div class="state-center">
       <dsa-spinner [size]="48" />
-      <p>Loading inventory…</p>
+      <p>Inventar wird geladen…</p>
     </div>
   } @else if (errorMsg()) {
-    <div class="dashboard__error">
+    <div class="state-error">
       <dsa-icon iconName="error" [fill]="true" />
-      <p>{{ errorMsg() }}</p>
-      <a routerLink="/" class="retry-hint">Refresh the page to retry.</a>
+      <div>
+        <p>{{ errorMsg() }}</p>
+        <a routerLink="/" class="retry-hint">Seite neu laden</a>
+      </div>
     </div>
   } @else {
-    <!-- KPI Row -->
+    <!-- ─── KPI Row ─── -->
     <div class="dashboard__kpis">
       <app-kpi-card
-        title="Total Items"
+        title="Artikel gesamt"
         [value]="totalItems()"
         icon="inventory_2"
         intent="default"
       />
       <app-kpi-card
-        title="Expired"
+        title="Abgelaufen"
         [value]="expiredCount()"
-        icon="warning"
+        icon="report"
         intent="danger"
       />
       <app-kpi-card
-        title="Expiring in 7 Days"
+        title="Läuft in 7 Tagen ab"
         [value]="expiringSoonCount()"
         icon="schedule"
         intent="warning"
       />
       <app-kpi-card
-        title="Fresh"
+        title="Frisch"
         [value]="freshCount()"
         icon="check_circle"
         intent="success"
       />
     </div>
 
-    <!-- Navigation Cards -->
+    <!-- ─── Navigation Cards ─── -->
     <div class="dashboard__nav">
-      <div class="nav-card">
-        <div class="nav-card__icon">
-          <dsa-icon iconName="list" [fill]="true" />
+      <a class="nav-card" routerLink="/items">
+        <div class="nav-card__icon nav-card__icon--primary">
+          <dsa-icon iconName="inventory_2" [fill]="true" />
         </div>
         <div class="nav-card__body">
-          <h2 class="nav-card__title">Manage Items</h2>
-          <p class="nav-card__desc">Add, view, and delete items in your fridge inventory.</p>
-          <button type="button" dsa-button class="primary" routerLink="/items">
-            <dsa-icon iconName="arrow_forward" />
-            Go to Items
-          </button>
+          <h2 class="nav-card__title">Artikel verwalten</h2>
+          <p class="nav-card__desc">Artikel hinzufügen, ansehen und aus dem Kühlschrank entfernen.</p>
         </div>
-      </div>
+        <dsa-icon iconName="chevron_right" class="nav-card__arrow" />
+      </a>
 
-      <div class="nav-card">
-        <div class="nav-card__icon">
+      <a class="nav-card" routerLink="/calendar">
+        <div class="nav-card__icon nav-card__icon--info">
           <dsa-icon iconName="calendar_month" [fill]="true" />
         </div>
         <div class="nav-card__body">
-          <h2 class="nav-card__title">Expiry Calendar</h2>
-          <p class="nav-card__desc">Browse expiries by month and filter by category.</p>
-          <button type="button" dsa-button class="primary" routerLink="/calendar">
-            <dsa-icon iconName="arrow_forward" />
-            Go to Calendar
-          </button>
+          <h2 class="nav-card__title">Ablaufkalender</h2>
+          <p class="nav-card__desc">Ablaufdaten nach Monat durchsuchen und nach Kategorie filtern.</p>
         </div>
-      </div>
+        <dsa-icon iconName="chevron_right" class="nav-card__arrow" />
+      </a>
     </div>
 
-    <!-- Category Distribution -->
+    <!-- ─── Category Distribution ─── -->
     @if (categoryStats().length > 0) {
       <div class="dashboard__categories">
-        <h2 class="dashboard__section-title">Category Distribution</h2>
+        <h2 class="section-title">Kategorienverteilung</h2>
         <div class="category-list">
           @for (stat of categoryStats(); track stat.name) {
             <div class="category-item">
@@ -92,20 +88,26 @@
                   [style.width.%]="(stat.count / totalItems()) * 100"
                 ></div>
               </div>
-              <span class="category-item__count">{{ stat.count }}</span>
+              <span class="category-item__count">
+                {{ stat.count }}&thinsp;<span class="category-item__pct">({{ ((stat.count / totalItems()) * 100).toFixed(0) }}%)</span>
+              </span>
             </div>
           }
         </div>
       </div>
     }
 
+    <!-- ─── Empty State ─── -->
     @if (totalItems() === 0) {
-      <div class="dashboard__empty">
-        <dsa-icon iconName="kitchen" [fill]="true" />
-        <p>Your fridge is empty. Start by adding some items!</p>
+      <div class="state-empty">
+        <div class="state-empty__icon">
+          <dsa-icon iconName="kitchen" [fill]="true" />
+        </div>
+        <h2 class="state-empty__title">Dein Kühlschrank ist leer</h2>
+        <p class="state-empty__desc">Füge deinen ersten Artikel hinzu und behalte den Überblick über Ablaufdaten.</p>
         <button type="button" dsa-button class="primary" routerLink="/items">
           <dsa-icon iconName="add" />
-          Add Items
+          Ersten Artikel hinzufügen
         </button>
       </div>
     }

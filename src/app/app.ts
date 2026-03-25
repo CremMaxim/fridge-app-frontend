@@ -27,21 +27,21 @@ export class App implements OnInit {
     this.menuService.menu = {
       items: [
         {
-          label: 'Dashboard',
+          label: 'Übersicht',
           path: '/',
           icon: 'dashboard',
           selectable: true,
           enabled: true,
         },
         {
-          label: 'Manage Items',
+          label: 'Artikel verwalten',
           path: '/items',
           icon: 'inventory_2',
           selectable: true,
           enabled: true,
         },
         {
-          label: 'Expiry Calendar',
+          label: 'Ablaufkalender',
           path: '/calendar',
           icon: 'calendar_month',
           selectable: true,

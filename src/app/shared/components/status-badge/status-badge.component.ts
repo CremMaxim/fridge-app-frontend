@@ -40,11 +40,11 @@ export class StatusBadgeComponent {
   readonly text = computed((): string => {
     switch (this.status()) {
       case ExpiryStatus.Expired:
-        return 'Expired';
+        return 'Abgelaufen';
       case ExpiryStatus.ExpiringSoon:
-        return 'Expiring Soon';
+        return 'Läuft bald ab';
       default:
-        return 'Fresh';
+        return 'Frisch';
     }
   });
 }
