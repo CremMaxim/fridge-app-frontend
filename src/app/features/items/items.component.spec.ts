@@ -1,8 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { DsaIconButtonComponent } from '@dsa/design-system-angular/icon-button';
 
 import { InventoryService } from '../../core/services/inventory.service';
 import { MockDataService } from '../../core/services/mock-data.service';
@@ -30,6 +28,7 @@ function createServiceSpy() {
   return {
     getItems: vi.fn(() => of(mockItems)),
     createItem: vi.fn(),
+    updateItem: vi.fn(),
     deleteItem: vi.fn(),
   };
 }
@@ -85,18 +84,10 @@ describe('ItemsComponent', () => {
     expect(component.visibleItems().find(i => i.id === mockItems[0].id)).toBeDefined();
   });
 
-  it('should render the eaten action as a check icon button with accessible text', () => {
+  it('should render one actions menu per visible item row', () => {
     fixture.detectChanges();
 
-    const iconButtons = fixture.debugElement
-      .queryAll(By.directive(DsaIconButtonComponent))
-      .map(debugElement => debugElement.componentInstance as DsaIconButtonComponent);
-    const eatenButtons = iconButtons.filter(button => button.iconName() === 'check_circle');
-
-    expect(eatenButtons).toHaveLength(mockItems.length);
-    expect(eatenButtons.every(button => button.buttonText() === 'Als gegessen markieren')).toBe(true);
-    expect(eatenButtons.every(button => button.mode() === 'tertiary-neutral')).toBe(true);
-    expect(fixture.nativeElement.querySelector('.item-actions button[dsa-button]')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('dsa-menu-button')).toHaveLength(mockItems.length);
   });
 
   it('should set loading=false and errorMsg on getItems error', async () => {
@@ -111,13 +102,30 @@ describe('ItemsComponent', () => {
   it('should open create dialog and reset form', () => {
     component.openCreateDialog();
     expect(component.showCreateDialog()).toBe(true);
+    expect(component.editingItem()).toBeNull();
     expect(component.createForm.value.name).toBeNull();
+  });
+
+  it('should open edit dialog and prefill the form with the selected item', () => {
+    component.openEditDialog(mockItems[0]);
+
+    expect(component.showCreateDialog()).toBe(true);
+    expect(component.editingItem()).toEqual(mockItems[0]);
+    expect(component.isEditMode()).toBe(true);
+    expect(component.itemDialogTitle()).toBe('Artikel bearbeiten');
+    expect(component.createForm.getRawValue()).toEqual({
+      name: mockItems[0].name,
+      expiryDate: mockItems[0].expiryDate,
+      category: mockItems[0].category,
+    });
   });
 
   it('should close create dialog', () => {
     component.showCreateDialog.set(true);
+    component.editingItem.set(mockItems[0]);
     component.closeCreateDialog();
     expect(component.showCreateDialog()).toBe(false);
+    expect(component.editingItem()).toBeNull();
   });
 
   it('should set itemToDelete on confirmDelete', () => {
@@ -142,11 +150,59 @@ describe('ItemsComponent', () => {
     expect(component.eatenItemIds().includes(mockItems[0].id)).toBe(false);
   });
 
-  it('should not submit create form when invalid', () => {
+  it('should update an item when submitItem is called in edit mode', () => {
+    const updatedItem: InventoryItem = {
+      ...mockItems[0],
+      name: 'Updated Milk',
+      expiryDate: '2099-11-30',
+    };
+    serviceSpy.updateItem.mockReturnValue(of(updatedItem));
+    component.items.set([...mockItems]);
+    component.openEditDialog(mockItems[0]);
+    component.createForm.setValue({
+      name: updatedItem.name,
+      expiryDate: updatedItem.expiryDate,
+      category: updatedItem.category,
+    });
+
+    component.submitItem();
+
+    expect(serviceSpy.updateItem).toHaveBeenCalledWith(mockItems[0].id, {
+      name: updatedItem.name,
+      expiryDate: updatedItem.expiryDate,
+      category: updatedItem.category,
+    });
+    expect(component.items()[0]).toEqual(updatedItem);
+    expect(component.showCreateDialog()).toBe(false);
+    expect(component.editingItem()).toBeNull();
+  });
+
+  it('should create an item when submitItem is called in create mode', () => {
     serviceSpy.createItem.mockReturnValue(of(mockItems[0]));
-    component.createForm.reset(); // empty = invalid
-    component.submitCreate();
+    component.openCreateDialog();
+    component.createForm.setValue({
+      name: mockItems[0].name,
+      expiryDate: mockItems[0].expiryDate,
+      category: mockItems[0].category,
+    });
+
+    component.submitItem();
+
+    expect(serviceSpy.createItem).toHaveBeenCalledWith({
+      name: mockItems[0].name,
+      expiryDate: mockItems[0].expiryDate,
+      category: mockItems[0].category,
+    });
+  });
+
+  it('should not submit the form when invalid', () => {
+    serviceSpy.createItem.mockReturnValue(of(mockItems[0]));
+    component.createForm.reset();
+
+    component.submitItem();
+
     expect(serviceSpy.createItem).not.toHaveBeenCalled();
+    expect(serviceSpy.updateItem).not.toHaveBeenCalled();
   });
 
   // ── toggleMockData ────────────────────────────────────────────────────────
