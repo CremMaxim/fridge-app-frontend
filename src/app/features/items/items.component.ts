@@ -10,8 +10,12 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
 import { DsaButtonComponent } from '@dsa/design-system-angular/button';
-import { DsaIconButtonComponent } from '@dsa/design-system-angular/icon-button';
 import { DsaIconComponent } from '@dsa/design-system-angular/icon';
+import {
+  DsaMenuButtonComponent,
+  DsaMenuButtonDividerComponent,
+  DsaMenuButtonItemComponent,
+} from '@dsa/design-system-angular/menu-button';
 import { DsaSpinnerComponent } from '@dsa/design-system-angular/spinner';
 import { DsaDialogComponent, DsaDialogFooterComponent } from '@dsa/design-system-angular/dialog';
 import { DsaFormFieldComponent } from '@dsa/design-system-angular/form-field';
@@ -20,7 +24,11 @@ import { DsaTable, DsaPrimeTemplate } from '@dsa/design-system-angular/table';
 import { DsaBadgeComponent } from '@dsa/design-system-angular/badge';
 import { DsaToastService } from '@dsa/design-system-angular';
 
-import { InventoryItem, ExpiryStatus } from '../../core/models/inventory-item.model';
+import {
+  InventoryItem,
+  ExpiryStatus,
+  UpdateItemRequest,
+} from '../../core/models/inventory-item.model';
 import { InventoryService } from '../../core/services/inventory.service';
 import { MockDataService } from '../../core/services/mock-data.service';
 import { formatDisplayDate, getExpiryStatus } from '../../core/utils/date.utils';
@@ -37,8 +45,10 @@ interface Column {
   imports: [
     ReactiveFormsModule,
     DsaButtonComponent,
-    DsaIconButtonComponent,
     DsaIconComponent,
+    DsaMenuButtonComponent,
+    DsaMenuButtonItemComponent,
+    DsaMenuButtonDividerComponent,
     DsaSpinnerComponent,
     DsaDialogComponent,
     DsaDialogFooterComponent,
@@ -68,10 +78,18 @@ export class ItemsComponent implements OnInit {
   readonly loading = signal(true);
   readonly errorMsg = signal<string | null>(null);
   readonly showCreateDialog = signal(false);
+  readonly editingItem = signal<InventoryItem | null>(null);
   readonly itemToDelete = signal<InventoryItem | null>(null);
   readonly submitting = signal(false);
   readonly searchQuery = signal('');
   readonly eatenItemIds = signal<string[]>([]);
+  readonly isEditMode = computed(() => this.editingItem() !== null);
+  readonly itemDialogTitle = computed(() =>
+    this.isEditMode() ? 'Artikel bearbeiten' : 'Neuen Artikel hinzufügen',
+  );
+  readonly itemDialogSubmitLabel = computed(() =>
+    this.isEditMode() ? 'Speichern' : 'Hinzufügen',
+  );
 
   readonly sortedItems = computed(() =>
     [...this.items()].sort((a, b) => a.expiryDate.localeCompare(b.expiryDate)),
@@ -175,44 +193,83 @@ export class ItemsComponent implements OnInit {
   }
 
   openCreateDialog(): void {
+    this.editingItem.set(null);
     this.createForm.reset();
+    this.showCreateDialog.set(true);
+  }
+
+  openEditDialog(item: InventoryItem): void {
+    this.editingItem.set(item);
+    this.createForm.reset({
+      name: item.name,
+      expiryDate: item.expiryDate,
+      category: item.category ?? '',
+    });
     this.showCreateDialog.set(true);
   }
 
   closeCreateDialog(): void {
     this.showCreateDialog.set(false);
+    this.editingItem.set(null);
   }
 
-  submitCreate(): void {
+  submitItem(): void {
     if (this.createForm.invalid || this.submitting()) return;
     this.submitting.set(true);
 
     const { name, expiryDate, category } = this.createForm.value;
-    this.inventoryService
-      .createItem({
-        name: name!,
-        expiryDate: expiryDate!,
-        category: category?.trim() || null,
-      })
-      .subscribe({
-        next: item => {
-          this.items.update(list => [...list, item]);
+    const request: UpdateItemRequest = {
+      name: name!,
+      expiryDate: expiryDate!,
+      category: category?.trim() || null,
+    };
+    const editingItem = this.editingItem();
+
+    if (editingItem) {
+      this.inventoryService.updateItem(editingItem.id, request).subscribe({
+        next: updatedItem => {
+          this.items.update(list =>
+            list.map(item => (item.id === updatedItem.id ? updatedItem : item)),
+          );
           this.submitting.set(false);
           this.showCreateDialog.set(false);
+          this.editingItem.set(null);
           this.toastService.success({
-            title: 'Artikel hinzugefügt',
-            description: `"${item.name}" wurde deinem Kühlschrank hinzugefügt.`,
+            title: 'Artikel aktualisiert',
+            description: `"${updatedItem.name}" wurde aktualisiert.`,
           });
         },
         error: err => {
           this.submitting.set(false);
           this.toastService.danger({
-            title: 'Artikel konnte nicht hinzugefügt werden',
+            title: 'Artikel konnte nicht aktualisiert werden',
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             description: (err as { message?: string }).message ?? 'Ein unerwarteter Fehler ist aufgetreten.',
           });
         },
       });
+      return;
+    }
+
+    this.inventoryService.createItem(request).subscribe({
+      next: item => {
+        this.items.update(list => [...list, item]);
+        this.submitting.set(false);
+        this.showCreateDialog.set(false);
+        this.toastService.success({
+          title: 'Artikel hinzugefügt',
+          description: `"${item.name}" wurde deinem Kühlschrank hinzugefügt.`,
+        });
+      },
+      error: err => {
+        this.submitting.set(false);
+        this.toastService.danger({
+          title: 'Artikel konnte nicht hinzugefügt werden',
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          description: (err as { message?: string }).message ?? 'Ein unerwarteter Fehler ist aufgetreten.',
+        });
+      },
+    });
   }
 
   confirmDelete(item: InventoryItem): void {

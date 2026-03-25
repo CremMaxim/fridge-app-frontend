@@ -12,6 +12,12 @@ export interface CreateItemRequest {
   expiryDate: string;
 }
 
+export interface UpdateItemRequest {
+  name: string;
+  category: string | null;
+  expiryDate: string;
+}
+
 export interface ApiError {
   status: number;
   error: string;

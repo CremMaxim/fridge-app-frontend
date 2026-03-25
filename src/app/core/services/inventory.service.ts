@@ -8,6 +8,7 @@ import {
   ApiError,
   CreateItemRequest,
   InventoryItem,
+  UpdateItemRequest,
 } from '../models/inventory-item.model';
 
 @Injectable({ providedIn: 'root' })
@@ -24,6 +25,12 @@ export class InventoryService {
   createItem(request: CreateItemRequest): Observable<InventoryItem> {
     return this.http
       .post<InventoryItem>(this.baseUrl, request)
+      .pipe(catchError(this.handleError));
+  }
+
+  updateItem(id: string, request: UpdateItemRequest): Observable<InventoryItem> {
+    return this.http
+      .put<InventoryItem>(`${this.baseUrl}/${id}`, request)
       .pipe(catchError(this.handleError));
   }
 

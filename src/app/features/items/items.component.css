@@ -213,6 +213,10 @@ tr[data-status='expiringSoon'] td {
 }
 
 .item-actions {
+  white-space: nowrap;
+}
+
+.item-actions__content {
   display: flex;
   justify-content: flex-end;
   align-items: center;

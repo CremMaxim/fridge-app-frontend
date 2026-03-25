@@ -151,18 +151,25 @@
                 }
               </td>
               <td class="item-actions">
-                @if (!isEaten(item)) {
-                  <button type="button" dsa-button class="tertiary small" (click)="markAsEaten(item)">
-                    Gegessen
-                  </button>
-                }
-                <dsa-icon-button
-                  iconName="delete"
-                  mode="danger"
-                  size="small"
-                  buttonText="Artikel löschen"
-                  (click)="confirmDelete(item)"
-                />
+                <div class="item-actions__content">
+                  <dsa-menu-button
+                    [useDsaIconButtonAsTrigger]="true"
+                    dsaIconButtonIcon="more_vert"
+                    dsaIconButtonMode="tertiary-neutral"
+                    dsaIconButtonSize="small"
+                    [menuPreferredAlignment]="'end'"
+                    menuMinWidth="fitToContent"
+                  >
+                    <dsa-menu-button-item (click)="openEditDialog(item)">Bearbeiten</dsa-menu-button-item>
+                    @if (!isEaten(item)) {
+                      <dsa-menu-button-item (click)="markAsEaten(item)">
+                        Als gegessen markieren
+                      </dsa-menu-button-item>
+                    }
+                    <dsa-menu-button-divider />
+                    <dsa-menu-button-item (click)="confirmDelete(item)">Löschen</dsa-menu-button-item>
+                  </dsa-menu-button>
+                </div>
               </td>
             </tr>
           </ng-template>
@@ -175,12 +182,12 @@
 <!-- ─────────────── Create Item Dialog ─────────────── -->
 <dsa-dialog
   [visible]="showCreateDialog()"
-  header="Neuen Artikel hinzufügen"
+  [header]="itemDialogTitle()"
   [closable]="true"
   maxWidth="480px"
-  (visibleChange)="showCreateDialog.set($event)"
+  (visibleChange)="$event ? showCreateDialog.set(true) : closeCreateDialog()"
 >
-  <form [formGroup]="createForm" (ngSubmit)="submitCreate()" class="create-form">
+  <form [formGroup]="createForm" (ngSubmit)="submitItem()" class="create-form">
     <dsa-form-field
       label="Name *"
       [dsaError]="createForm.controls['name'].invalid && createForm.controls['name'].touched"
@@ -225,12 +232,12 @@
       dsa-button
       class="primary"
       [disabled]="createForm.invalid || submitting()"
-      (click)="submitCreate()"
+      (click)="submitItem()"
     >
       @if (submitting()) {
         <dsa-spinner [size]="16" />
       }
-      Hinzufügen
+      {{ itemDialogSubmitLabel() }}
     </button>
   </dsa-dialog-footer>
 </dsa-dialog>

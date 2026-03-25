@@ -89,6 +89,48 @@ describe('InventoryService', () => {
     });
   });
 
+  // ─── updateItem ────────────────────────────────────────────────────────
+  describe('updateItem', () => {
+    it('should PUT to /api/v1/items/:id and return the updated item', () => {
+      const id = 'a1b2c3d4-0000-0000-0000-000000000001';
+      const payload = { name: 'Butter', category: 'Dairy', expiryDate: '2026-04-10' };
+      let result: InventoryItem | undefined;
+      service.updateItem(id, payload).subscribe(item => (result = item));
+
+      const req = httpMock.expectOne(`${BASE_URL}/${id}`);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(payload);
+
+      const updated: InventoryItem = {
+        id,
+        ...payload,
+        createdAt: '2026-03-23T08:00:00Z',
+      };
+      req.flush(updated);
+
+      expect(result).toEqual(updated);
+    });
+
+    it('should propagate update errors as ApiError', () => {
+      const id = 'a1b2c3d4-0000-0000-0000-000000000001';
+      let errorResult: unknown;
+
+      service.updateItem(id, {
+        name: 'Butter',
+        category: 'Dairy',
+        expiryDate: '2026-04-10',
+      }).subscribe({ error: e => (errorResult = e) });
+
+      const req = httpMock.expectOne(`${BASE_URL}/${id}`);
+      req.flush(
+        { status: 400, error: 'Bad Request', message: 'Invalid data' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+      expect((errorResult as { status: number }).status).toBe(400);
+    });
+  });
+
   // ─── deleteItem ────────────────────────────────────────────────────────
   describe('deleteItem', () => {
     it('should DELETE /api/v1/items/:id', () => {

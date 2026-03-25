@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { DsaIconButtonComponent } from '@dsa/design-system-angular/icon-button';
 
 import { InventoryService } from '../../core/services/inventory.service';
 import { MockDataService } from '../../core/services/mock-data.service';
@@ -81,6 +83,20 @@ describe('ItemsComponent', () => {
     component.searchQuery.set('milk');
 
     expect(component.visibleItems().find(i => i.id === mockItems[0].id)).toBeDefined();
+  });
+
+  it('should render the eaten action as a check icon button with accessible text', () => {
+    fixture.detectChanges();
+
+    const iconButtons = fixture.debugElement
+      .queryAll(By.directive(DsaIconButtonComponent))
+      .map(debugElement => debugElement.componentInstance as DsaIconButtonComponent);
+    const eatenButtons = iconButtons.filter(button => button.iconName() === 'check_circle');
+
+    expect(eatenButtons).toHaveLength(mockItems.length);
+    expect(eatenButtons.every(button => button.buttonText() === 'Als gegessen markieren')).toBe(true);
+    expect(eatenButtons.every(button => button.mode() === 'tertiary-neutral')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.item-actions button[dsa-button]')).toBeNull();
   });
 
   it('should set loading=false and errorMsg on getItems error', async () => {
