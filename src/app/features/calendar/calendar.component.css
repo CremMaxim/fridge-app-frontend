@@ -91,12 +91,6 @@
   align-items: start;
 }
 
-@media (min-width: 960px) {
-  .calendar-grid-wrap {
-    grid-template-columns: 1fr 320px;
-  }
-}
-
 /* ─── Calendar Grid ───────────────────────────────────────────────────────── */
 .calendar-grid {
   display: grid;
@@ -141,8 +135,8 @@
   flex-direction: column;
   align-items: center;
   gap: var(--rds-spacing-2);
-  padding: var(--rds-spacing-4) var(--rds-spacing-3);
-  min-height: 76px;
+  padding: var(--rds-spacing-5) var(--rds-spacing-3);
+  min-height: 90px;
   background-color: var(--rds-color-background-surface-default);
   border: none;
   cursor: default;
@@ -163,10 +157,6 @@
   opacity: 0.45;
 }
 
-.calendar-cell--selected {
-  background-color: var(--rds-color-background-state-on-neutral-selected);
-}
-
 /* Expired: full danger tint */
 .calendar-cell--expired {
   background-color: var(--rds-color-background-accent-danger);
@@ -176,10 +166,6 @@
   background-color: var(--rds-color-background-state-on-accent-danger-hover);
 }
 
-.calendar-cell--expired.calendar-cell--selected {
-  background-color: var(--rds-color-background-state-on-accent-danger-selected);
-}
-
 /* Expiring soon: full warning tint */
 .calendar-cell--expiring-soon {
   background-color: var(--rds-color-background-accent-warning);
@@ -187,10 +173,6 @@
 
 .calendar-cell--expiring-soon.calendar-cell--has-items:hover {
   background-color: var(--rds-color-background-state-on-accent-warning-hover);
-}
-
-.calendar-cell--expiring-soon.calendar-cell--selected {
-  background-color: var(--rds-color-background-state-on-accent-warning-selected);
 }
 
 .calendar-cell__number {
@@ -220,76 +202,6 @@
   line-height: var(--rds-sizing-8);
 }
 
-/* ─── Day Detail Panel ────────────────────────────────────────────────────── */
-.day-detail {
-  background-color: var(--rds-color-background-surface-default);
-  border: var(--rds-border-width-default) solid var(--rds-color-border-default);
-  border-radius: var(--rds-border-radius-large);
-  overflow: hidden;
-  align-self: start;
-  max-height: 620px;
-  overflow-y: auto;
-  box-shadow: var(--rds-drop-shadow-accent);
-}
-
-.day-detail__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--rds-spacing-4);
-  padding: var(--rds-spacing-5) var(--rds-spacing-6);
-  border-bottom: var(--rds-border-width-default) solid var(--rds-color-border-default);
-  background-color: var(--rds-color-background-surface-default);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.day-detail__date {
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--rds-color-text-default);
-}
-
-.day-detail__items {
-  display: flex;
-  flex-direction: column;
-}
-
-.day-detail__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--rds-spacing-4);
-  padding: var(--rds-spacing-5) var(--rds-spacing-6);
-  border-bottom: var(--rds-border-width-default) solid var(--rds-color-border-default);
-}
-
-.day-detail__item:last-child {
-  border-bottom: none;
-}
-
-.day-detail__item-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--rds-spacing-1);
-  min-width: 0;
-}
-
-.day-detail__item-name {
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--rds-color-text-default);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.day-detail__item-category {
-  font-size: 0.75rem;
-  color: var(--rds-color-text-medium-emphasis);
-}
 
 /* ─── Cell Hover Popup ────────────────────────────────────────────────────── */
 .calendar-cell__popup {

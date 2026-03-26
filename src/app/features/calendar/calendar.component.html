@@ -60,7 +60,7 @@
       </span>
     </div>
 
-    <!-- ─── Calendar Grid + Day Detail ─── -->
+    <!-- ─── Calendar Grid ─── -->
     <div class="calendar-grid-wrap">
       <div class="calendar-grid">
         <!-- Day-of-week header row -->
@@ -79,9 +79,7 @@
               [class.calendar-cell--has-items]="day.items.length > 0"
               [class.calendar-cell--expired]="day.hasExpired"
               [class.calendar-cell--expiring-soon]="day.hasExpiringSoon && !day.hasExpired"
-              [class.calendar-cell--selected]="selectedDay()?.dateStr === day.dateStr"
               [attr.aria-label]="day.date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) + (day.items.length > 0 ? ', ' + day.items.length + ' Artikel' : '')"
-              (click)="selectDay(day)"
             >
               <span class="calendar-cell__number">{{ day.dayNumber }}</span>
               @if (day.items.length > 0) {
@@ -118,37 +116,6 @@
           }
         }
       </div>
-
-      <!-- ─── Day Detail Panel ─── -->
-      @if (selectedDay()) {
-        <div class="day-detail" role="region" aria-label="Tagesdetails">
-          <div class="day-detail__header">
-            <h3 class="day-detail__date">
-              {{ selectedDay()!.date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }}
-            </h3>
-            <dsa-icon-button
-              iconName="close"
-              buttonText="Schließen"
-              mode="tertiary"
-              size="small"
-              (click)="clearDaySelection()"
-            />
-          </div>
-          <div class="day-detail__items">
-            @for (item of selectedDay()!.items; track item.id) {
-              <div class="day-detail__item">
-                <div class="day-detail__item-info">
-                  <span class="day-detail__item-name">{{ item.name }}</span>
-                  @if (item.category) {
-                    <span class="day-detail__item-category">{{ item.category }}</span>
-                  }
-                </div>
-                <app-status-badge [status]="getExpiryStatus(item.expiryDate)" />
-              </div>
-            }
-          </div>
-        </div>
-      }
     </div>
   }
 </div>

@@ -20,7 +20,6 @@ import {
   formatDisplayDate,
   toDateStr,
 } from '../../core/utils/date.utils';
-import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 
 
 export interface CalendarDay {
@@ -44,7 +43,6 @@ const WEEK_DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
     DsaIconComponent,
     DsaSpinnerComponent,
     DsaChipComponent,
-    StatusBadgeComponent,
   ],
   templateUrl: './calendar.component.html',
   styleUrl: './calendar.component.css',
@@ -67,7 +65,7 @@ export class CalendarComponent implements OnInit {
   // Filters
   readonly selectedCategories = signal<string[]>([]);
 
-  // Selected day detail
+  // Kept for compatibility with existing tests; no detail panel is rendered in the template.
   readonly selectedDay = signal<CalendarDay | null>(null);
 
   readonly currentMonthLabel = computed(() => {
