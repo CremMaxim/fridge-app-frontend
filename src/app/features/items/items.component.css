@@ -145,6 +145,19 @@
   outline-offset: 1px;
 }
 
+.items-page__sort {
+  display: flex;
+  align-items: center;
+  gap: var(--rds-spacing-4);
+  flex-shrink: 0;
+}
+
+.items-page__sort-label {
+  font-size: 0.875rem;
+  color: var(--rds-color-text-medium-emphasis);
+  white-space: nowrap;
+}
+
 .search-icon {
   color: var(--rds-color-icon-medium-emphasis);
   flex-shrink: 0;

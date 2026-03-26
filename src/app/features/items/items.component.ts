@@ -22,6 +22,10 @@ import { DsaDialogComponent, DsaDialogFooterComponent } from '@dsa/design-system
 import { DsaFormFieldComponent } from '@dsa/design-system-angular/form-field';
 import { DsaInputFieldComponent } from '@dsa/design-system-angular/input-field';
 import { DsaTable, DsaPrimeTemplate } from '@dsa/design-system-angular/table';
+import {
+  DsaButtonToggleComponent,
+  DsaButtonToggleGroupComponent,
+} from '@dsa/design-system-angular/toggle-button-group';
 import { DsaBadgeComponent } from '@dsa/design-system-angular/badge';
 import { DsaToastService } from '@dsa/design-system-angular';
 
@@ -40,6 +44,8 @@ interface Column {
   header: string;
   width: string;
 }
+
+type SortOption = 'expiryAsc' | 'expiryDesc';
 
 const SKIP_EXPIRED_DELETE_CONFIRMATION_KEY = 'items.skipExpiredDeleteConfirmation';
 const SKIP_SINGLE_DELETE_CONFIRMATION_KEY = 'items.skipSingleDeleteConfirmation';
@@ -61,6 +67,8 @@ const SKIP_SINGLE_DELETE_CONFIRMATION_KEY = 'items.skipSingleDeleteConfirmation'
     DsaInputFieldComponent,
     DsaTable,
     DsaPrimeTemplate,
+    DsaButtonToggleGroupComponent,
+    DsaButtonToggleComponent,
     DsaBadgeComponent,
     StatusBadgeComponent,
   ],
@@ -89,6 +97,7 @@ export class ItemsComponent implements OnInit {
   readonly submitting = signal(false);
   readonly deleteExpiredSubmitting = signal(false);
   readonly searchQuery = signal('');
+  readonly sortOption = signal<SortOption>('expiryAsc');
   readonly eatenItemIds = signal<string[]>([]);
   readonly skipSingleDeleteConfirmation = signal(this.readStoredBoolean(SKIP_SINGLE_DELETE_CONFIRMATION_KEY));
   readonly skipExpiredDeleteConfirmation = signal(this.readSkipExpiredDeleteConfirmation());
@@ -103,7 +112,10 @@ export class ItemsComponent implements OnInit {
   );
 
   readonly sortedItems = computed(() =>
-    [...this.items()].sort((a, b) => a.expiryDate.localeCompare(b.expiryDate)),
+    [...this.items()].sort((a, b) => {
+      const result = a.expiryDate.localeCompare(b.expiryDate);
+      return this.sortOption() === 'expiryDesc' ? result * -1 : result;
+    }),
   );
 
   readonly filteredItems = computed(() => {
@@ -317,6 +329,12 @@ export class ItemsComponent implements OnInit {
       title: 'Als gegessen markiert',
       description: `"${item.name}" wurde als gegessen markiert.`,
     });
+  }
+
+  onSortChange(value: unknown): void {
+    if (value === 'expiryAsc' || value === 'expiryDesc') {
+      this.sortOption.set(value);
+    }
   }
 
   cancelDelete(): void {

@@ -69,6 +69,21 @@ describe('ItemsComponent', () => {
     expect(sorted[0].expiryDate <= sorted[1].expiryDate).toBe(true);
   });
 
+  it('should sort items by expiry date descending', () => {
+    component.onSortChange('expiryDesc');
+
+    const sorted = component.sortedItems();
+
+    expect(sorted[0].expiryDate >= sorted[1].expiryDate).toBe(true);
+  });
+
+  it('should ignore unsupported sort values', () => {
+    component.onSortChange('expiryDesc');
+    component.onSortChange('invalid');
+
+    expect(component.sortOption()).toBe('expiryDesc');
+  });
+
   it('should hide eaten items from visibleItems when no search is active', () => {
     component.items.set([...mockItems]);
     component.markAsEaten(mockItems[0]);

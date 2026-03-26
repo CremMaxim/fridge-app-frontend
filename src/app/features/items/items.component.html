@@ -85,6 +85,17 @@
           aria-label="Artikel suchen"
         />
       </div>
+      <div class="items-page__sort">
+        <span class="items-page__sort-label">Sortierung</span>
+        <dsa-button-toggle-group
+          name="items-sort-order"
+          [value]="sortOption()"
+          (valueChange)="onSortChange($event)"
+        >
+          <dsa-button-toggle value="expiryAsc">Älteste zuerst</dsa-button-toggle>
+          <dsa-button-toggle value="expiryDesc">Neueste zuerst</dsa-button-toggle>
+        </dsa-button-toggle-group>
+      </div>
       <span class="items-page__count">
         @if (searchQuery()) {
           {{ visibleItems().length }} von {{ items().length }} Artikeln
