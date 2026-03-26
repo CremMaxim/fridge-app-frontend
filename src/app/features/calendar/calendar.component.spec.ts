@@ -7,8 +7,6 @@ import { InventoryItem, ExpiryStatus } from '../../core/models/inventory-item.mo
 import { CalendarComponent } from './calendar.component';
 import { toDateStr } from '../../core/utils/date.utils';
 
-const today = toDateStr(new Date());
-
 // Build dates relative to today for deterministic status
 function addDays(days: number): string {
   const d = new Date();
@@ -58,49 +56,38 @@ describe('CalendarComponent', () => {
     expect(component.items()).toHaveLength(mockItems.length);
   });
 
-  it('should filter to only expired items with "expired" quick filter', () => {
-    component.setQuickFilter('expired');
-    const result = component.filteredSortedItems();
-    expect(result.every(i => i.expiryDate < today)).toBe(true);
+  it('should expose sorted available categories including the fallback label', () => {
+    expect(component.availableCategories()).toEqual(['Dairy', 'Meat', 'Ohne Kategorie']);
   });
 
-  it('should filter to only expiring-soon items with "soon" quick filter', () => {
-    component.setQuickFilter('soon');
-    const result = component.filteredSortedItems();
-    result.forEach(i => {
-      const d = new Date(i.expiryDate);
-      const diff = Math.floor((d.getTime() - new Date().setHours(0,0,0,0)) / 86400000);
-      expect(diff).toBeGreaterThanOrEqual(0);
-      expect(diff).toBeLessThanOrEqual(7);
-    });
-  });
-
-  it('should filter by category', () => {
-    component.onCategoryAdded({ label: 'Dairy' });
+  it('should filter by category chip selection', () => {
+    component.onChipToggle('Dairy', true);
     const result = component.filteredSortedItems();
     expect(result.every(i => i.category === 'Dairy')).toBe(true);
   });
 
-  it('should clear category filter on allSelectionsRemoved', () => {
-    component.onCategoryAdded({ label: 'Dairy' });
-    component.onAllCategoriesRemoved();
+  it('should clear category filter when the chip is toggled off', () => {
+    component.onChipToggle('Dairy', true);
+    component.onChipToggle('Dairy', false);
     expect(component.selectedCategories()).toHaveLength(0);
   });
 
   it('should sort ascending by default', () => {
-    component.setQuickFilter('all');
     const result = component.filteredSortedItems();
     for (let i = 1; i < result.length; i++) {
       expect(result[i - 1].expiryDate <= result[i].expiryDate).toBe(true);
     }
   });
 
-  it('should sort descending when order is desc', () => {
-    component.setSortOrder('desc');
-    const result = component.filteredSortedItems();
-    for (let i = 1; i < result.length; i++) {
-      expect(result[i - 1].expiryDate >= result[i].expiryDate).toBe(true);
-    }
+  it('should flag calendar days containing expired items', () => {
+    const day = component
+      .calendarWeeks()
+      .flat()
+      .find(entry => entry.dateStr === '2020-01-01');
+
+    expect(day?.hasExpired).toBe(true);
+    expect(day?.items[0]?.name).toBe('Expired Yogurt');
+    expect(component.getExpiryStatus('2020-01-01')).toBe(ExpiryStatus.Expired);
   });
 
   it('should generate 6 weeks (42 days) for the calendar', () => {

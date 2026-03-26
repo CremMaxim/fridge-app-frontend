@@ -39,6 +39,7 @@ describe('ItemsComponent', () => {
   let serviceSpy: ReturnType<typeof createServiceSpy>;
 
   beforeEach(async () => {
+    localStorage.clear();
     serviceSpy = createServiceSpy();
     await TestBed.configureTestingModule({
       imports: [ItemsComponent],
@@ -133,10 +134,66 @@ describe('ItemsComponent', () => {
     expect(component.itemToDelete()).toEqual(mockItems[0]);
   });
 
+  it('should skip the single delete dialog when the reminder is disabled', () => {
+    serviceSpy.deleteItem.mockReturnValue(of(void 0));
+    component.items.set([...mockItems]);
+    component.skipSingleDeleteConfirmation.set(true);
+
+    component.confirmDelete(mockItems[0]);
+
+    expect(serviceSpy.deleteItem).toHaveBeenCalledWith(mockItems[0].id);
+    expect(component.itemToDelete()).toBeNull();
+    expect(component.items().find(item => item.id === mockItems[0].id)).toBeUndefined();
+  });
+
+  it('should expose expired items for bulk deletion', () => {
+    expect(component.expiredItems().map(item => item.id)).toEqual(['id-2']);
+  });
+
+  it('should open the expired delete dialog when confirmation is required', () => {
+    component.items.set([...mockItems]);
+
+    component.openDeleteExpiredDialog();
+
+    expect(component.showDeleteExpiredDialog()).toBe(true);
+    expect(serviceSpy.deleteItem).not.toHaveBeenCalled();
+  });
+
+  it('should skip the expired delete dialog when the reminder is disabled', () => {
+    serviceSpy.deleteItem.mockReturnValue(of(void 0));
+    component.items.set([...mockItems]);
+    component.skipExpiredDeleteConfirmation.set(true);
+
+    component.openDeleteExpiredDialog();
+
+    expect(component.showDeleteExpiredDialog()).toBe(false);
+    expect(serviceSpy.deleteItem).toHaveBeenCalledWith('id-2');
+    expect(component.items().find(item => item.id === 'id-2')).toBeUndefined();
+  });
+
   it('should clear itemToDelete on cancelDelete', () => {
     component.itemToDelete.set(mockItems[0]);
+    component.skipSingleDeleteConfirmation.set(true);
+    component.singleDeleteDontAskAgain.set(false);
     component.cancelDelete();
     expect(component.itemToDelete()).toBeNull();
+    expect(component.singleDeleteDontAskAgain()).toBe(true);
+  });
+
+  it('should delete all expired items and persist the reminder preference on confirm', () => {
+    serviceSpy.deleteItem.mockReturnValue(of(void 0));
+    component.items.set([...mockItems]);
+    component.showDeleteExpiredDialog.set(true);
+    component.bulkDeleteDontAskAgain.set(true);
+
+    component.submitDeleteExpired();
+
+    expect(serviceSpy.deleteItem).toHaveBeenCalledTimes(1);
+    expect(serviceSpy.deleteItem).toHaveBeenCalledWith('id-2');
+    expect(component.items().find(item => item.id === 'id-2')).toBeUndefined();
+    expect(component.showDeleteExpiredDialog()).toBe(false);
+    expect(component.skipExpiredDeleteConfirmation()).toBe(true);
+    expect(localStorage.getItem('items.skipExpiredDeleteConfirmation')).toBe('true');
   });
 
   it('should call deleteItem and remove item from list on submitDelete', () => {
@@ -148,6 +205,18 @@ describe('ItemsComponent', () => {
     expect(serviceSpy.deleteItem).toHaveBeenCalledWith(mockItems[0].id);
     expect(component.items().find(i => i.id === mockItems[0].id)).toBeUndefined();
     expect(component.eatenItemIds().includes(mockItems[0].id)).toBe(false);
+  });
+
+  it('should persist the single delete reminder preference on confirm', () => {
+    serviceSpy.deleteItem.mockReturnValue(of(void 0));
+    component.items.set([...mockItems]);
+    component.itemToDelete.set(mockItems[0]);
+    component.singleDeleteDontAskAgain.set(true);
+
+    component.submitDelete();
+
+    expect(component.skipSingleDeleteConfirmation()).toBe(true);
+    expect(localStorage.getItem('items.skipSingleDeleteConfirmation')).toBe('true');
   });
 
   it('should update an item when submitItem is called in edit mode', () => {

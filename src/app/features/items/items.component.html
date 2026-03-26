@@ -9,6 +9,20 @@
       <button
         type="button"
         dsa-button
+        class="danger"
+        [disabled]="loading() || deleteExpiredSubmitting() || expiredItems().length === 0"
+        (click)="openDeleteExpiredDialog()"
+      >
+        @if (deleteExpiredSubmitting()) {
+          <dsa-spinner [size]="16" />
+        } @else {
+          <dsa-icon iconName="delete_sweep" />
+        }
+        Abgelaufene löschen ({{ expiredItems().length }})
+      </button>
+      <button
+        type="button"
+        dsa-button
         [class]="isMockDataActive() ? 'danger' : ''"
         [disabled]="mockDataLoading()"
         (click)="toggleMockData()"
@@ -242,6 +256,58 @@
   </dsa-dialog-footer>
 </dsa-dialog>
 
+<!-- ─────────────── Bulk Delete Expired Confirmation Dialog ─────────────── -->
+<dsa-dialog
+  [visible]="showDeleteExpiredDialog()"
+  header="Abgelaufene Artikel löschen?"
+  [closable]="true"
+  maxWidth="460px"
+  (visibleChange)="!$event && cancelDeleteExpired()"
+>
+  <div class="delete-confirm delete-confirm--bulk">
+    <dsa-icon iconName="warning" [fill]="true" class="delete-confirm__icon" />
+    <div class="delete-confirm__content">
+      <p class="delete-confirm__text">
+        Möchtest du
+        <strong>
+          {{ expiredItems().length }}
+          {{ expiredItems().length === 1 ? 'abgelaufenen Artikel' : 'abgelaufene Artikel' }}
+        </strong>
+        wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+      </p>
+
+      <label class="delete-confirm__checkbox">
+        <dsa-checkbox
+          [checked]="bulkDeleteDontAskAgain()"
+          [disabled]="deleteExpiredSubmitting()"
+          (change)="bulkDeleteDontAskAgain.set($event)"
+        />
+        <span>Nicht mehr nachfragen</span>
+      </label>
+    </div>
+  </div>
+
+  <dsa-dialog-footer>
+    <button type="button" dsa-button [disabled]="deleteExpiredSubmitting()" (click)="cancelDeleteExpired()">
+      Abbrechen
+    </button>
+    <button
+      type="button"
+      dsa-button
+      class="danger"
+      [disabled]="deleteExpiredSubmitting()"
+      (click)="submitDeleteExpired()"
+    >
+      @if (deleteExpiredSubmitting()) {
+        <dsa-spinner [size]="16" />
+      } @else {
+        <dsa-icon iconName="delete_sweep" />
+      }
+      Dauerhaft löschen
+    </button>
+  </dsa-dialog-footer>
+</dsa-dialog>
+
 <!-- ─────────────── Delete Confirmation Dialog ─────────────── -->
 <dsa-dialog
   [visible]="itemToDelete() !== null"
@@ -252,10 +318,20 @@
 >
   <div class="delete-confirm">
     <dsa-icon iconName="warning" [fill]="true" class="delete-confirm__icon" />
-    <p>
-      Möchtest du <strong>{{ itemToDelete()?.name }}</strong> wirklich löschen?
-      Diese Aktion kann nicht rückgängig gemacht werden.
-    </p>
+    <div class="delete-confirm__content">
+      <p class="delete-confirm__text">
+        Möchtest du <strong>{{ itemToDelete()?.name }}</strong> wirklich löschen?
+        Diese Aktion kann nicht rückgängig gemacht werden.
+      </p>
+
+      <label class="delete-confirm__checkbox">
+        <dsa-checkbox
+          [checked]="singleDeleteDontAskAgain()"
+          (change)="singleDeleteDontAskAgain.set($event)"
+        />
+        <span>Nicht mehr nachfragen</span>
+      </label>
+    </div>
   </div>
 
   <dsa-dialog-footer>

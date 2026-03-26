@@ -10,6 +10,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
 import { DsaButtonComponent } from '@dsa/design-system-angular/button';
+import { DsaCheckboxComponent } from '@dsa/design-system-angular/checkbox';
 import { DsaIconComponent } from '@dsa/design-system-angular/icon';
 import {
   DsaMenuButtonComponent,
@@ -40,11 +41,15 @@ interface Column {
   width: string;
 }
 
+const SKIP_EXPIRED_DELETE_CONFIRMATION_KEY = 'items.skipExpiredDeleteConfirmation';
+const SKIP_SINGLE_DELETE_CONFIRMATION_KEY = 'items.skipSingleDeleteConfirmation';
+
 @Component({
   selector: 'app-items',
   imports: [
     ReactiveFormsModule,
     DsaButtonComponent,
+    DsaCheckboxComponent,
     DsaIconComponent,
     DsaMenuButtonComponent,
     DsaMenuButtonItemComponent,
@@ -80,9 +85,15 @@ export class ItemsComponent implements OnInit {
   readonly showCreateDialog = signal(false);
   readonly editingItem = signal<InventoryItem | null>(null);
   readonly itemToDelete = signal<InventoryItem | null>(null);
+  readonly showDeleteExpiredDialog = signal(false);
   readonly submitting = signal(false);
+  readonly deleteExpiredSubmitting = signal(false);
   readonly searchQuery = signal('');
   readonly eatenItemIds = signal<string[]>([]);
+  readonly skipSingleDeleteConfirmation = signal(this.readStoredBoolean(SKIP_SINGLE_DELETE_CONFIRMATION_KEY));
+  readonly skipExpiredDeleteConfirmation = signal(this.readSkipExpiredDeleteConfirmation());
+  readonly singleDeleteDontAskAgain = signal(this.skipSingleDeleteConfirmation());
+  readonly bulkDeleteDontAskAgain = signal(this.skipExpiredDeleteConfirmation());
   readonly isEditMode = computed(() => this.editingItem() !== null);
   readonly itemDialogTitle = computed(() =>
     this.isEditMode() ? 'Artikel bearbeiten' : 'Neuen Artikel hinzufügen',
@@ -113,6 +124,10 @@ export class ItemsComponent implements OnInit {
     const eatenIds = this.eatenItemIds();
     return this.filteredItems().filter(item => !eatenIds.includes(item.id));
   });
+
+  readonly expiredItems = computed(() =>
+    this.items().filter(item => getExpiryStatus(item.expiryDate) === ExpiryStatus.Expired),
+  );
 
   readonly columns: Column[] = [
     { field: 'name', header: 'Name', width: '30%' },
@@ -147,10 +162,7 @@ export class ItemsComponent implements OnInit {
       const ids = this.mockDataService.activeIds();
       forkJoin(ids.map(id => this.inventoryService.deleteItem(id))).subscribe({
         next: () => {
-          this.items.update(list => list.filter(i => !ids.includes(i.id)));
-          this.eatenItemIds.update(eaten => eaten.filter(id => !ids.includes(id)));
-          this.mockDataService.activeIds.set([]);
-          this.mockDataService.active.set(false);
+            this.removeItemsByIds(ids);
           this.mockDataLoading.set(false);
           this.toastService.success({
             title: 'Testdaten entfernt',
@@ -273,7 +285,25 @@ export class ItemsComponent implements OnInit {
   }
 
   confirmDelete(item: InventoryItem): void {
+    if (this.skipSingleDeleteConfirmation()) {
+      this.submitDelete(item);
+      return;
+    }
+
     this.itemToDelete.set(item);
+    this.singleDeleteDontAskAgain.set(this.skipSingleDeleteConfirmation());
+  }
+
+  openDeleteExpiredDialog(): void {
+    if (this.deleteExpiredSubmitting() || this.expiredItems().length === 0) return;
+
+    if (this.skipExpiredDeleteConfirmation()) {
+      this.submitDeleteExpired();
+      return;
+    }
+
+    this.bulkDeleteDontAskAgain.set(this.skipExpiredDeleteConfirmation());
+    this.showDeleteExpiredDialog.set(true);
   }
 
   isEaten(item: InventoryItem): boolean {
@@ -291,16 +321,28 @@ export class ItemsComponent implements OnInit {
 
   cancelDelete(): void {
     this.itemToDelete.set(null);
+    this.singleDeleteDontAskAgain.set(this.skipSingleDeleteConfirmation());
   }
 
-  submitDelete(): void {
-    const item = this.itemToDelete();
+  cancelDeleteExpired(): void {
+    if (this.deleteExpiredSubmitting()) return;
+    this.showDeleteExpiredDialog.set(false);
+    this.bulkDeleteDontAskAgain.set(this.skipExpiredDeleteConfirmation());
+  }
+
+  submitDelete(itemToDelete?: InventoryItem): void {
+    const item = itemToDelete ?? this.itemToDelete();
     if (!item) return;
+
+    if (!this.skipSingleDeleteConfirmation()) {
+      const skipConfirmation = this.singleDeleteDontAskAgain();
+      this.skipSingleDeleteConfirmation.set(skipConfirmation);
+      this.persistStoredBoolean(SKIP_SINGLE_DELETE_CONFIRMATION_KEY, skipConfirmation);
+    }
 
     this.inventoryService.deleteItem(item.id).subscribe({
       next: () => {
-        this.items.update(list => list.filter(i => i.id !== item.id));
-        this.eatenItemIds.update(ids => ids.filter(id => id !== item.id));
+        this.removeItemsByIds([item.id]);
         this.itemToDelete.set(null);
         this.toastService.success({
           title: 'Artikel entfernt',
@@ -312,6 +354,46 @@ export class ItemsComponent implements OnInit {
         this.toastService.danger({
           title: 'Artikel konnte nicht gelöscht werden',
           description: 'Ein unerwarteter Fehler ist aufgetreten.',
+        });
+      },
+    });
+  }
+
+  submitDeleteExpired(): void {
+    const expiredItems = this.expiredItems();
+    if (this.deleteExpiredSubmitting() || expiredItems.length === 0) {
+      return;
+    }
+
+    if (this.showDeleteExpiredDialog()) {
+      const skipConfirmation = this.bulkDeleteDontAskAgain();
+      this.skipExpiredDeleteConfirmation.set(skipConfirmation);
+      this.persistSkipExpiredDeleteConfirmation(skipConfirmation);
+    }
+
+    const expiredIds = expiredItems.map(item => item.id);
+    this.deleteExpiredSubmitting.set(true);
+
+    forkJoin(expiredIds.map(id => this.inventoryService.deleteItem(id))).subscribe({
+      next: () => {
+        this.removeItemsByIds(expiredIds);
+        this.showDeleteExpiredDialog.set(false);
+        this.bulkDeleteDontAskAgain.set(this.skipExpiredDeleteConfirmation());
+        this.deleteExpiredSubmitting.set(false);
+        this.toastService.success({
+          title: 'Abgelaufene Artikel entfernt',
+          description:
+            expiredIds.length === 1
+              ? '1 abgelaufener Artikel wurde dauerhaft gelöscht.'
+              : `${expiredIds.length} abgelaufene Artikel wurden dauerhaft gelöscht.`,
+        });
+      },
+      error: err => {
+        this.deleteExpiredSubmitting.set(false);
+        this.toastService.danger({
+          title: 'Abgelaufene Artikel konnten nicht gelöscht werden',
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          description: (err as { message?: string }).message ?? 'Ein unerwarteter Fehler ist aufgetreten.',
         });
       },
     });
@@ -331,6 +413,41 @@ export class ItemsComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  private readSkipExpiredDeleteConfirmation(): boolean {
+    return this.readStoredBoolean(SKIP_EXPIRED_DELETE_CONFIRMATION_KEY);
+  }
+
+  private persistSkipExpiredDeleteConfirmation(value: boolean): void {
+    this.persistStoredBoolean(SKIP_EXPIRED_DELETE_CONFIRMATION_KEY, value);
+  }
+
+  private readStoredBoolean(key: string): boolean {
+    try {
+      return localStorage.getItem(key) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  private persistStoredBoolean(key: string, value: boolean): void {
+    try {
+      localStorage.setItem(key, String(value));
+    } catch {
+      // Ignore storage failures and fall back to in-memory state only.
+    }
+  }
+
+  private removeItemsByIds(ids: string[]): void {
+    const idsSet = new Set(ids);
+
+    this.items.update(list => list.filter(item => !idsSet.has(item.id)));
+    this.eatenItemIds.update(itemIds => itemIds.filter(id => !idsSet.has(id)));
+
+    const remainingMockIds = this.mockDataService.activeIds().filter(id => !idsSet.has(id));
+    this.mockDataService.activeIds.set(remainingMockIds);
+    this.mockDataService.active.set(remainingMockIds.length > 0);
   }
 }
 
